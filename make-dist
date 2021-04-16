@@ -1,0 +1,35 @@
+#! /bin/bash
+
+die() {
+	[ -n "$1" ] && echo "$@" > "/dev/stderr"
+	exit 1
+}
+
+URL="http://svn.code.sf.net/p/netpbm/code/stable"
+DOCURL="https://svn.code.sf.net/p/netpbm/code/userguide"
+
+SVNURL="`svn info --show-item url netpbm 2> /dev/null`"
+
+if [ "$SVNURL" = "$URL" ]; then
+	svn update netpbm && \
+	svn update userguide
+else
+	svn checkout "$URL" netpbm && \
+	svn checkout "$DOCURL"
+fi || die "Cannot svn"
+
+VERSION=`make version` || die "Cannot determine version"
+echo "netpbm version $VERSION"
+
+DIRNAME="netpbm-${VERSION}"
+[ -d "${DIRNAME}" ] && die "${DIRNAME} already exists"
+
+svn export netpbm "${DIRNAME}" && \
+svn export userguide "${DIRNAME}/userguide" || die "Cannot export from svn"
+
+pushd "${DIRNAME}/userguide"
+make -f ../buildtools/manpage.mk USERGUIDE=. manpages --keep-going
+popd
+
+mkdir -p dist
+tar cfv - "${DIRNAME}" | xz -9v > "dist/${DIRNAME}.tar.xz" || die tar failed
