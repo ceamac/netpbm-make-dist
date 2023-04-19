@@ -6,6 +6,6 @@ version:
 
 clean:
 	find . \( -name '.*.swp' -o -name '*~' \) -delete
-	rm -fR netpbm-*
+	rm -fR netpbm-[0-9]*
 
 .PHONY: version clean
